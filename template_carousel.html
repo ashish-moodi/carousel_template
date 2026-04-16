@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Campaign System — Diagrams</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0d1117;color:#e0e0e0;min-height:100vh}
+
+/* ── HEADER / TABS ── */
+header{display:flex;align-items:center;gap:10px;padding:11px 20px;background:#161b22;border-bottom:1px solid #30363d;position:sticky;top:0;z-index:300}
+header h1{font-size:14px;font-weight:700;color:#f0f6fc}
+.sub{font-size:11px;color:#6e7681}
+.tabs{display:flex;gap:2px;margin-left:auto}
+.tab{padding:5px 14px;font-size:12px;border-radius:6px;border:1px solid transparent;cursor:pointer;color:#8b949e;transition:all .15s;white-space:nowrap}
+.tab:hover{color:#c9d1d9;background:#21262d}
+.tab.active{background:#1f6feb22;border-color:#1f6feb;color:#58a6ff;font-weight:600}
+
+/* ── PANELS ── */
+.panel{display:none;padding:28px 32px;min-height:calc(100vh - 50px);overflow:auto}
+.panel.active{display:block}
+
+/* ════════════════════════════════════════════════════
+   SHARED FLOWCHART PRIMITIVES
+════════════════════════════════════════════════════ */
+
+/* Node */
+.fn{
+  padding:10px 16px;border-radius:8px;border:1.5px solid #30363d;
+  background:#161b22;text-align:center;position:relative;
+  transition:box-shadow .18s;
+}
+.fn:hover{box-shadow:0 0 0 3px rgba(88,166,255,.12)}
+.fn-t{font-size:12px;font-weight:700;color:#f0f6fc;line-height:1.4}
+.fn-s{font-size:10.5px;color:#8b949e;margin-top:3px;line-height:1.4}
+.fn-code{font-family:'Cascadia Code','Fira Code',monospace;font-size:9.5px;color:#6e7681;margin-top:5px;background:#0d1117;padding:3px 8px;border-radius:3px;display:inline-block}
+
+/* node colours */
+.fn-user  {border-color:#484f58;background:#161b22}
+.fn-api   {border-color:#2a5a2a;background:#141e14}
+.fn-svc   {border-color:#5a3a1a;background:#1c140d}
+.fn-celery{border-color:#5a4a1a;background:#1c180d}
+.fn-model {border-color:#3a2a5a;background:#141024}
+.fn-ext   {border-color:#1f4a6f;background:#0d1624}
+.fn-factory{border-color:#1a5a5a;background:#0d1c1c}
+.fn-end   {border-color:#2a5a2a;background:#0d1c0d}
+
+/* Vertical down-arrow */
+.arr-v{display:flex;flex-direction:column;align-items:center;position:relative}
+.arr-v .vline{width:2px;height:28px;flex-shrink:0}
+.arr-v .vtip {width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid;flex-shrink:0}
+.arr-v .vlbl{
+  position:absolute;left:50%;top:50%;transform:translate(7px,-50%);
+  font-size:9px;font-weight:600;color:#6e7681;white-space:nowrap;
+  background:#0d1117;padding:1px 5px;border-radius:3px
+}
+
+/* Horizontal connector (used in splits) */
+.arr-h{height:2px;flex:1}
+
+/* Decision diamond */
+.decision{display:flex;flex-direction:column;align-items:center;position:relative}
+.diamond-wrap{width:108px;height:108px;position:relative;flex-shrink:0}
+.diamond{
+  position:absolute;inset:12px;
+  transform:rotate(45deg);
+  border:1.5px solid #58a6ff;background:#0f1a28;border-radius:3px
+}
+.diamond-text{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;
+  font-size:10px;font-weight:700;color:#79b8ff;text-align:center;line-height:1.35;
+  padding:8px;
+}
+
+/* Branch row */
+.branches{display:flex;align-items:flex-start;width:100%;position:relative}
+.branch{display:flex;flex-direction:column;align-items:center;flex:1;gap:0}
+.branch-lbl{font-size:9px;font-weight:700;padding:2px 7px;border-radius:10px;margin-bottom:4px}
+.bl-yes{background:#1a3a1a;color:#56d364}
+.bl-no {background:#1f3a5f;color:#79b8ff}
+.bl-txt{background:#21262d;color:#8b949e}
+
+/* Branch H-bar that spans multiple branches */
+.hbar-wrap{display:flex;align-items:flex-start;width:100%;position:relative}
+.hbar-wrap::before{
+  content:'';position:absolute;top:0;height:2px;
+  left:25%;right:25%;
+}
+
+/* Track separator */
+.track-sep{width:1px;background:#21262d;margin:0 20px;align-self:stretch;flex-shrink:0}
+.track-header{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;text-align:center;padding:6px 14px;border-radius:5px;margin-bottom:16px}
+
+/* Section label bar */
+.sec-bar{display:flex;align-items:center;gap:10px;margin:24px 0 16px}
+.sec-bar .sbl{font-size:11px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:4px 12px;border-radius:5px;white-space:nowrap}
+.sec-bar .sbl-line{flex:1;height:1px;background:#21262d}
+
+/* ════════════════════════════════════════════════════
+   DATA MODELS (Tab 2) — shared card styles
+════════════════════════════════════════════════════ */
+.card{border-radius:8px;overflow:hidden;border:1.5px solid #30363d;background:#161b22;transition:box-shadow .2s,border-color .2s}
+.card:hover{border-color:#58a6ff;box-shadow:0 0 0 3px rgba(88,166,255,.1),0 4px 20px rgba(0,0,0,.4)}
+.card-head{padding:9px 14px;border-bottom:1px solid #30363d;display:flex;align-items:center;gap:8px}
+.badge{font-size:9px;font-weight:700;letter-spacing:.05em;padding:2px 6px;border-radius:4px;text-transform:uppercase;flex-shrink:0}
+.b-model {background:#2a1a3a;color:#bc8cff}
+.b-exec  {background:#1f3a5f;color:#79b8ff}
+.card-name{font-size:13px;font-weight:700;color:#f0f6fc;flex:1}
+.card-file{font-size:10px;color:#6e7681}
+.slbl{font-size:9px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:#6e7681;padding:5px 14px 3px;border-top:1px solid #21262d;background:#0d1117}
+.mbr{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px;padding:3px 14px;font-size:11px;line-height:1.5;transition:background .12s}
+.mbr:hover{background:#1f2937}
+.mbr:last-child{padding-bottom:7px}
+.vs{font-weight:700;width:10px;text-align:center;flex-shrink:0}
+.vs-g{color:#56d364}.vs-r{color:#f85149}.vs-o{color:#f0883e}
+.mn{font-family:'Cascadia Code','Fira Code',monospace}
+.mn-m{color:#79b8ff}.mn-a{color:#e3b341}
+.mt{color:#6e7681;font-family:'Cascadia Code','Fira Code',monospace;font-size:10px}
+.sb{font-size:8px;font-weight:700;padding:1px 4px;border-radius:3px;background:#21262d;color:#8b949e;text-transform:uppercase;flex-shrink:0}
+.ec-row{display:flex;flex-wrap:wrap;gap:5px;padding:5px 14px 7px}
+.ec{font-size:10px;font-family:'Cascadia Code','Fira Code',monospace;padding:2px 8px;border-radius:12px;background:#21262d;border:1px solid #30363d;color:#c9d1d9}
+.ec-g{background:#1a3a1a;border-color:#2a5a2a;color:#56d364}
+.ec-b{background:#1a2a3a;border-color:#2a4a6a;color:#79b8ff}
+.ec-y{background:#3a2a00;border-color:#6a4a00;color:#e3b341}
+.ec-r{background:#3a1a1a;border-color:#6a2a2a;color:#f85149}
+.ec-p{background:#2a1a3a;border-color:#4a2a6a;color:#bc8cff}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px}
+.leg{display:flex;align-items:center;gap:6px;font-size:11px;color:#8b949e}
+.legd{width:28px;height:3px;border-radius:2px}
+</style>
+</head>
+<body>
+
+<header>
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" stroke-width="1.8"><path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"/></svg>
+  <h1>Campaign System</h1>
+  <span class="sub">backend/campaign/</span>
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab(0)">User Flow</div>
+    <div class="tab" onclick="switchTab(1)">System Architecture</div>
+    <div class="tab" onclick="switchTab(2)">Data Models</div>
+    <div class="tab" onclick="switchTab(3)">Template Classes</div>
+  </div>
+</header>
+
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 0 — USER FLOW  (two-track flowchart)
+══════════════════════════════════════════════════════ -->
+<div class="panel active" id="panel-0">
+
+  <!-- colour legend -->
+  <div class="legend">
+    <div class="leg"><div class="legd" style="background:#2a5a2a"></div>API Layer</div>
+    <div class="leg"><div class="legd" style="background:#5a3a1a"></div>Service</div>
+    <div class="leg"><div class="legd" style="background:#5a4a1a"></div>Celery Task</div>
+    <div class="leg"><div class="legd" style="background:#3a2a5a"></div>Execution Model</div>
+    <div class="leg"><div class="legd" style="background:#1f4a6f"></div>External API</div>
+    <div class="leg"><div class="legd" style="background:#1a5a5a"></div>Factory / Handler</div>
+  </div>
+
+  <div style="display:flex;gap:0;align-items:flex-start;min-width:820px">
+
+    <!-- ── LEFT TRACK: Template Creation ── -->
+    <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:340px;max-width:420px">
+      <div class="track-header" style="background:#1a2a3a;color:#79b8ff;width:80%">Template Creation &amp; Approval</div>
+
+      <div class="fn fn-user" style="width:80%">
+        <div class="fn-t">User Submits Template</div>
+        <div class="fn-s">name, category, header, body, buttons, language</div>
+      </div>
+      <div class="arr-v"><div class="vline" style="background:#3fb950"></div><div class="vtip" style="border-top-color:#3fb950"></div><div class="vlbl">HTTP POST</div></div>
+
+      <div class="fn fn-api" style="width:80%">
+        <div class="fn-t">POST /whatsapp-templates/</div>
+        <div class="fn-s">WhatsappTemplateViewSet</div>
+        <div class="fn-code">perform_create(serializer)</div>
+      </div>
+      <div class="arr-v"><div class="vline" style="background:#3fb950"></div><div class="vtip" style="border-top-color:#3fb950"></div></div>
+
+      <div class="fn fn-celery" style="width:80%">
+        <div class="fn-t">process_whatsapp_template.delay(id)</div>
+        <div class="fn-s">Celery worker picks up task</div>
+      </div>
+      <div class="arr-v"><div class="vline" style="background:#e3b341"></div><div class="vtip" style="border-top-color:#e3b341"></div></div>
+
+      <div class="fn fn-svc" style="width:80%">
+        <div class="fn-t">MetaTemplateApprovalBuilder.build()</div>
+        <div class="fn-s">constructs approval payload · uploads media via MetaFileUploadService</div>
+      </div>
+      <div class="arr-v"><div class="vline" style="background:#58a6ff"></div><div class="vtip" style="border-top-color:#58a6ff"></div><div class="vlbl">HTTP POST</div></div>
+
+      <div class="fn fn-ext" style="width:80%">
+        <div class="fn-t">Meta Graph API</div>
+        <div class="fn-s">POST /{waba_id}/message_templates</div>
+        <div class="fn-code">→ meta_template_id · status = PENDING</div>
+      </div>
+      <div class="arr-v"><div class="vline" style="background:#58a6ff"></div><div class="vtip" style="border-top-color:#58a6ff"></div><div class="vlbl">Webhook</div></div>
+
+      <div class="fn fn-api" style="width:80%">
+        <div class="fn-t">Webhook: message_template_status_update</div>
+        <div class="fn-s">handler updates WhatsappTemplate.status</div>
+        <div class="fn-code">status = APPROVED | REJECTED | PAUSED</div>
+      </div>
+      <div class="arr-v"><div class="vline" style="background:#56d364"></div><div class="vtip" style="border-top-color:#56d364"></div></div>
+
+      <div class="fn fn-end" style="width:80%">
+        <div class="fn-t" style="color:#56d364">✓ Template APPROVED</div>
+        <div class="fn-s">ready to use in campaigns</div>
+      </div>
+    </div>
+
+    <!-- Divider -->
+    <div class="track-sep" style="margin-top:52px"></div>
+
+    <!-- ── RIGHT TRACK: Campaign Execution ── -->
+    <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:340px;max-width:480px">
+      <div class="track-header" style="background:#1a1a2d;color:#bc8cff;width:85%">Campaign Execution</div>
+
+      <div class="fn fn-user" style="width:85%">
+        <div class="fn-t">User Creates Campaign</div>
+        <div class="fn-s">selects APPROVED template · uploads CSV · configures batch / schedule</div>
+      </div>
+      <div class="arr-v"><div class="vline" style="background:#3fb950"></div><div class="vtip" style="border-top-color:#3fb950"></div><div class="vlbl">HTTP POST</div></div>
+
+      <div class="fn fn-api" style="width:85%">
+        <div class="fn-t">POST /whatsapp-campaigns/</div>
+        <div class="fn-s">WhatsappCampaignViewSet.perform_create()</div>
+      </div>
+      <div class="arr-v"><div class="vline" style="background:#3fb950"></div><div class="vtip" style="border-top-color:#3fb950"></div></div>
+
+      <div class="fn fn-svc" style="width:85%">
+        <div class="fn-t">WhatsappCampaignService.initialise()</div>
+        <div class="fn-s">parse CSV · set metrics (total/queued) · upload header media → store handle_id</div>
+      </div>
+      <div class="arr-v"><div class="vline" style="background:#f0883e"></div><div class="vtip" style="border-top-color:#f0883e"></div></div>
+
+      <div class="fn fn-celery" style="width:85%">
+        <div class="fn-t">execute_whatsapp_campaign.delay(id)</div>
+        <div class="fn-s">Celery worker · slices broadcast_settings batches · creates one CampaignExecution per batch</div>
+      </div>
+      <div class="arr-v"><div class="vline" style="background:#e3b341"></div><div class="vtip" style="border-top-color:#e3b341"></div></div>
+
+      <div class="fn fn-model" style="width:85%">
+        <div class="fn-t">WhatsappCampaignExecution.execute()</div>
+        <div class="fn-s">iterate csv_data rows · skip aborted/completed · status → BROADCASTING on first batch</div>
+      </div>
+      <div class="arr-v"><div class="vline" style="background:#bc8cff"></div><div class="vtip" style="border-top-color:#bc8cff"></div></div>
+
+      <!-- Decision: Meta vs Karix -->
+      <div class="decision" style="width:85%">
+        <div class="diamond-wrap">
+          <div class="diamond"></div>
+          <div class="diamond-text">waba source<br/>= first_connect?</div>
+        </div>
+        <!-- branch bar -->
+        <div style="display:flex;width:100%;position:relative">
+          <div style="position:absolute;top:0;left:calc(25% + 2px);right:calc(25% + 2px);height:2px;background:#30363d"></div>
+          <!-- YES branch -->
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center">
+            <div style="width:2px;height:20px;background:#30363d"></div>
+            <span class="branch-lbl bl-yes">YES — Meta</span>
+            <div class="fn fn-model" style="width:90%;border-color:#1f6feb">
+              <div class="fn-t">WhatsappTemplateExecution</div>
+              <div class="fn-code">.execute()</div>
+            </div>
+          </div>
+          <!-- NO branch -->
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center">
+            <div style="width:2px;height:20px;background:#30363d"></div>
+            <span class="branch-lbl bl-no">NO — Karix</span>
+            <div class="fn fn-model" style="width:90%;border-color:#bc8cff">
+              <div class="fn-t">KarixTemplateExecution</div>
+              <div class="fn-code">.execute()</div>
+            </div>
+          </div>
+        </div>
+        <!-- rejoin -->
+        <div style="display:flex;width:100%;position:relative;margin-top:0">
+          <div style="position:absolute;top:0;left:calc(25% + 2px);right:calc(25% + 2px);height:2px;background:#30363d"></div>
+          <div style="flex:1;display:flex;justify-content:center"><div style="width:2px;height:20px;background:#30363d"></div></div>
+          <div style="flex:1;display:flex;justify-content:center"><div style="width:2px;height:20px;background:#30363d"></div></div>
+        </div>
+      </div>
+      <div class="arr-v"><div class="vline" style="background:#bc8cff"></div><div class="vtip" style="border-top-color:#bc8cff"></div></div>
+
+      <div class="fn fn-factory" style="width:85%">
+        <div class="fn-t">TemplateHandlerFactory.create()</div>
+        <div class="fn-s">→ CarouselTemplateHandler · StandardTemplateHandler · AuthenticationTemplateHandler</div>
+        <div class="fn-code">handler.validate() → handler.build_payload()</div>
+      </div>
+      <div class="arr-v"><div class="vline" style="background:#58a6ff"></div><div class="vtip" style="border-top-color:#58a6ff"></div><div class="vlbl">HTTP POST</div></div>
+
+      <div class="fn fn-ext" style="width:85%">
+        <div class="fn-t">Meta / Karix Messages API</div>
+        <div class="fn-s">POST messages endpoint · returns {messages:[{id:"wam_xxx"}]}</div>
+      </div>
+      <div class="arr-v"><div class="vline" style="background:#bc8cff"></div><div class="vtip" style="border-top-color:#bc8cff"></div></div>
+
+      <div class="fn fn-model" style="width:85%">
+        <div class="fn-t">store event_sid · append_event("sent_to_whatsapp")</div>
+        <div class="fn-s">atomic dedup lock · create session.Event · fire signal</div>
+        <div class="fn-code">whatsapp_template_execution_event_added.send()</div>
+      </div>
+      <div class="arr-v"><div class="vline" style="background:#58a6ff"></div><div class="vtip" style="border-top-color:#58a6ff"></div><div class="vlbl">Webhook</div></div>
+
+      <div class="fn fn-ext" style="width:85%">
+        <div class="fn-t">Delivery Status Webhook</div>
+        <div class="fn-s">sent → delivered → read · or failed (retry up to 3×)</div>
+      </div>
+      <div class="arr-v"><div class="vline" style="background:#bc8cff"></div><div class="vtip" style="border-top-color:#bc8cff"></div></div>
+
+      <div class="fn fn-end" style="width:85%">
+        <div class="fn-t" style="color:#56d364">✓ Metrics Updated · Signals Fired</div>
+        <div class="fn-s">campaign.status → COMPLETED on last batch</div>
+        <div class="fn-code">whatsapp_campaign_execution_metrics_recalculated.send()</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 1 — SYSTEM ARCHITECTURE  (vertical flowchart)
+══════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-1">
+
+  <div class="legend">
+    <div class="leg"><div class="legd" style="background:#2a5a2a"></div>API (Django)</div>
+    <div class="leg"><div class="legd" style="background:#5a3a1a"></div>Service</div>
+    <div class="leg"><div class="legd" style="background:#5a4a1a"></div>Celery</div>
+    <div class="leg"><div class="legd" style="background:#3a2a5a"></div>Execution Models</div>
+    <div class="leg"><div class="legd" style="background:#1a5a5a"></div>Handler Factory</div>
+    <div class="leg"><div class="legd" style="background:#1f4a6f"></div>External API</div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;align-items:center;max-width:560px;margin:0 auto">
+
+    <div class="fn fn-user" style="width:100%">
+      <div class="fn-t">Client Request</div>
+      <div class="fn-s">Browser / Mobile / Integration</div>
+    </div>
+    <div class="arr-v"><div class="vline" style="background:#3fb950"></div><div class="vtip" style="border-top-color:#3fb950"></div><div class="vlbl">HTTPS</div></div>
+
+    <!-- API split -->
+    <div style="display:flex;width:100%;position:relative">
+      <div style="position:absolute;top:0;left:calc(25% + 1px);right:calc(25% + 1px);height:2px;background:#30363d"></div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center">
+        <div style="width:2px;height:18px;background:#30363d"></div>
+        <div class="fn fn-api" style="width:90%">
+          <div class="fn-t">WhatsappCampaignViewSet</div>
+          <div class="fn-s">CRUD + abort + sync</div>
+        </div>
+      </div>
+      <div style="flex:1;display:flex;flex-direction:column;align-items:center">
+        <div style="width:2px;height:18px;background:#30363d"></div>
+        <div class="fn fn-api" style="width:90%">
+          <div class="fn-t">WhatsappTemplateViewSet</div>
+          <div class="fn-s">CRUD + meta sync</div>
+        </div>
+      </div>
+    </div>
+    <!-- rejoin -->
+    <div style="display:flex;width:100%;position:relative">
+      <div style="position:absolute;top:28px;left:calc(25% + 1px);right:calc(25% + 1px);height:2px;background:#30363d"></div>
+      <div style="flex:1;display:flex;justify-content:center"><div style="width:2px;height:30px;background:#30363d"></div></div>
+      <div style="flex:1;display:flex;justify-content:center"><div style="width:2px;height:30px;background:#30363d"></div></div>
+    </div>
+    <div class="arr-v" style="margin-top:-2px"><div class="vtip" style="border-top-color:#30363d"></div></div>
+
+    <div class="fn fn-svc" style="width:100%">
+      <div class="fn-t">Service Layer</div>
+      <div class="fn-s">WhatsappCampaignService.initialise() — parse CSV · set metrics · upload media handle<br/>WhatsappTemplateService.sync_with_meta()</div>
+    </div>
+    <div class="arr-v"><div class="vline" style="background:#e3b341"></div><div class="vtip" style="border-top-color:#e3b341"></div><div class="vlbl">queue</div></div>
+
+    <div class="fn fn-celery" style="width:100%">
+      <div class="fn-t">Celery Workers</div>
+      <div class="fn-s">execute_whatsapp_campaign — batches csv_data rows<br/>process_whatsapp_template — sends to Meta for approval</div>
+    </div>
+    <div class="arr-v"><div class="vline" style="background:#bc8cff"></div><div class="vtip" style="border-top-color:#bc8cff"></div></div>
+
+    <div class="fn fn-model" style="width:100%">
+      <div class="fn-t">WhatsappCampaignExecution (DB Model)</div>
+      <div class="fn-s">iterates csv_data · creates one TemplateExecution per row · updates metrics atomically</div>
+    </div>
+    <div class="arr-v"><div class="vline" style="background:#bc8cff"></div><div class="vtip" style="border-top-color:#bc8cff"></div></div>
+
+    <!-- Decision: Meta vs Karix -->
+    <div class="decision" style="width:100%">
+      <div class="diamond-wrap">
+        <div class="diamond"></div>
+        <div class="diamond-text">waba_phone<br/>source?</div>
+      </div>
+      <div style="display:flex;width:100%;position:relative">
+        <div style="position:absolute;top:0;left:calc(25% + 1px);right:calc(25% + 1px);height:2px;background:#30363d"></div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center">
+          <div style="width:2px;height:18px;background:#30363d"></div>
+          <span class="branch-lbl bl-yes" style="margin-bottom:4px">first_connect</span>
+          <div class="fn fn-model" style="width:88%;border-color:#1f6feb">
+            <div class="fn-t">WhatsappTemplateExecution</div>
+          </div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center">
+          <div style="width:2px;height:18px;background:#30363d"></div>
+          <span class="branch-lbl bl-no" style="margin-bottom:4px">other</span>
+          <div class="fn fn-model" style="width:88%;border-color:#bc8cff">
+            <div class="fn-t">KarixTemplateExecution</div>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex;width:100%;position:relative">
+        <div style="position:absolute;top:0;left:calc(25%+1px);right:calc(25%+1px);height:2px;background:#30363d"></div>
+        <div style="flex:1;display:flex;justify-content:center"><div style="width:2px;height:20px;background:#30363d"></div></div>
+        <div style="flex:1;display:flex;justify-content:center"><div style="width:2px;height:20px;background:#30363d"></div></div>
+      </div>
+    </div>
+    <div class="arr-v"><div class="vline" style="background:#56d3d3"></div><div class="vtip" style="border-top-color:#56d3d3"></div></div>
+
+    <div class="fn fn-factory" style="width:100%">
+      <div class="fn-t">TemplateHandlerFactory.create()</div>
+      <div class="fn-s">WhatsappTemplateStateBuilder.is_carousel() → picks handler class<br/>_CATEGORY_HANDLER_MAP → Standard / Authentication / Carousel</div>
+    </div>
+    <div class="arr-v"><div class="vline" style="background:#56d3d3"></div><div class="vtip" style="border-top-color:#56d3d3"></div></div>
+
+    <div class="fn fn-factory" style="width:100%">
+      <div class="fn-t">Handler: validate() → build_payload()</div>
+      <div class="fn-s">_make_builder() returns MetaTemplateMessageBuilder<br/>_build_header_component() + _build_body_component() → dict</div>
+    </div>
+    <div class="arr-v"><div class="vline" style="background:#58a6ff"></div><div class="vtip" style="border-top-color:#58a6ff"></div><div class="vlbl">HTTP POST</div></div>
+
+    <div class="fn fn-ext" style="width:100%">
+      <div class="fn-t">Meta / Karix Messages API</div>
+      <div class="fn-s">returns wam_id → stored as event_sid · status webhooks follow (delivered / read / failed)</div>
+    </div>
+    <div class="arr-v"><div class="vline" style="background:#58a6ff"></div><div class="vtip" style="border-top-color:#58a6ff"></div><div class="vlbl">Webhook</div></div>
+
+    <div class="fn fn-model" style="width:100%">
+      <div class="fn-t">Webhook Handler → append_event() → Signals</div>
+      <div class="fn-s">whatsapp_template_execution_event_added · whatsapp_campaign_execution_metrics_recalculated</div>
+    </div>
+    <div class="arr-v"><div class="vline" style="background:#56d364"></div><div class="vtip" style="border-top-color:#56d364"></div></div>
+
+    <div class="fn fn-end" style="width:100%">
+      <div class="fn-t" style="color:#56d364">✓ Campaign Metrics Updated in DB</div>
+      <div class="fn-s">campaign.status → COMPLETED when last_batch finishes</div>
+    </div>
+
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 2 — DATA MODELS (cards + SVG FK arrows)
+══════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-2">
+  <div class="legend">
+    <div class="leg"><div class="legd" style="background:linear-gradient(90deg,#bc8cff 60%,transparent 60%);background-size:7px 3px"></div>ForeignKey / M2M</div>
+    <div class="leg"><div class="legd" style="background:linear-gradient(90deg,#f0883e 60%,transparent 60%);background-size:6px 3px"></div>Creates</div>
+  </div>
+  <div style="position:relative" id="mdl-canvas">
+    <svg id="mdl-svg" style="position:absolute;top:0;left:0;pointer-events:none;z-index:0" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="ah-fk"  markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#bc8cff"/></marker>
+        <marker id="ah-cr"  markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto"><polygon points="0 0,8 3,0 6" fill="#f0883e"/></marker>
+      </defs>
+      <g id="mdl-lines"></g>
+    </svg>
+    <div style="position:relative;z-index:1">
+      <div style="display:grid;grid-template-columns:340px 340px 340px;gap:20px 28px;max-width:1100px" id="models-grid">
+
+        <div class="card" id="m-Campaign" style="grid-column:1;grid-row:1">
+          <div class="card-head"><span class="badge b-model">Model</span><span class="card-name">WhatsappCampaign</span></div>
+          <div class="slbl">Status</div>
+          <div class="ec-row"><span class="ec ec-y">QUEUED</span><span class="ec ec-b">BROADCASTING</span><span class="ec ec-r">ABORTED</span><span class="ec ec-g">COMPLETED</span><span class="ec ec-r">FAILED</span><span class="ec ec-p">LIVE</span></div>
+          <div class="slbl">Fields</div>
+          <div class="mbr"><span class="vs vs-g">+</span><span class="mn mn-a">waba_phone</span><span class="mt">FK → MetaAsset</span></div>
+          <div class="mbr"><span class="vs vs-g">+</span><span class="mn mn-a">whatsapp_template</span><span class="mt">FK → WhatsappTemplate</span></div>
+          <div class="mbr"><span class="vs vs-g">+</span><span class="mn mn-a">user_groups</span><span class="mt">M2M → UserGroup</span></div>
+          <div class="mbr"><span class="vs vs-g">+</span><span class="mn mn-a">csv_data · variables · metrics · broadcast_settings</span><span class="mt">JSONField</span></div>
+          <div class="slbl">Properties</div>
+          <div class="mbr"><span class="vs vs-g">+</span><span class="mn mn-m">dispatch_mode / dispatch_time / should_batch</span></div>
+          <div class="mbr"><span class="vs vs-g">+</span><span class="mn mn-m">is_queued / is_aborted / is_abortable</span></div>
+        </div>
+
+        <div class="card" id="m-Template" style="grid-column:2;grid-row:1">
+          <div class="card-head"><span class="badge b-model">Model</span><span class="card-name">WhatsappTemplate</span></div>
+          <div class="slbl">Status / Category / HeaderType</div>
+          <div class="ec-row"><span class="ec ec-y">DRAFT</span><span class="ec ec-g">APPROVED</span><span class="ec ec-r">REJECTED</span><span class="ec ec-b">PENDING</span><span class="ec ec-p">PAUSED</span></div>
+          <div class="ec-row"><span class="ec ec-b">AUTHENTICATION</span><span class="ec ec-g">MARKETING</span><span class="ec ec-y">UTILITY</span></div>
+          <div class="ec-row"><span class="ec">TEXT</span><span class="ec">IMAGE</span><span class="ec">VIDEO</span><span class="ec">DOCUMENT</span><span class="ec ec-p">CAROUSEL</span></div>
+          <div class="slbl">Fields</div>
+          <div class="mbr"><span class="vs vs-g">+</span><span class="mn mn-a">name</span><span class="mt">CharField (a–z 0–9 _)</span></div>
+          <div class="mbr"><span class="vs vs-g">+</span><span class="mn mn-a">waba</span><span class="mt">FK → MetaAsset</span></div>
+          <div class="mbr"><span class="vs vs-g">+</span><span class="mn mn-a">header / content / footer / quick_replies</span><span class="mt">JSONField</span></div>
+          <div class="mbr"><span class="vs vs-g">+</span><span class="mn mn-a">languageCode · category · status · errors</span></div>
+          <div class="slbl">Constraint</div>
+          <div class="mbr"><span class="vs vs-g"> </span><span class="mt">unique_together: (name, waba, organization)</span></div>
+        </div>
+
+        <div class="card" id="m-CampaignExec" style="grid-column:3;grid-row:1">
+          <div class="card-head"><span class="badge b-exec">Execution</span><span class="card-name">WhatsappCampaignExecution</span></div>
+          <div class="slbl">Fields</div>
+          <div class="mbr"><span class="vs vs-g">+</span><span class="mn mn-a">campaign</span><span class="mt">FK → WhatsappCampaign</span></div>
+          <div class="mbr"><span class="vs vs-g">+</span><span class="mn mn-a">metrics · csv_data</span><span class="mt">JSONField</span></div>
+          <div class="mbr"><span class="vs vs-g">+</span><span class="mn mn-a">first_batch / last_batch</span><span class="mt">BooleanField</span></div>
+          <div class="slbl">execute() steps</div>
+          <div class="mbr" style="flex-direction:column;align-items:flex-start;gap:2px;font-size:10.5px;color:#8b949e;padding:4px 14px 8px">
+            <div>1. Skip if aborted / completed</div>
+            <div>2. Pick Meta vs Karix class by waba source</div>
+            <div>3. Iterate csv_data · skip duplicates</div>
+            <div>4. Create + execute TemplateExecution per row</div>
+            <div>5. Atomic metrics update + signal</div>
+            <div>6. last_batch → COMPLETED</div>
+          </div>
+        </div>
+
+        <div class="card" id="m-TemplateExec" style="grid-column:1;grid-row:2">
+          <div class="card-head"><span class="badge b-exec">Execution</span><span class="card-name">WhatsappTemplateExecution</span></div>
+          <div class="slbl">Constants</div>
+          <div class="mbr"><span class="vs vs-g">+</span><span class="mn mn-a">MAX_RETRIES = 3 · TIMEOUT_HOURS = 5</span></div>
+          <div class="slbl">Fields</div>
+          <div class="mbr"><span class="vs vs-g">+</span><span class="mn mn-a">campaign_execution</span><span class="mt">FK → CampaignExecution</span></div>
+          <div class="mbr"><span class="vs vs-g">+</span><span class="mn mn-a">template · waba_phone</span><span class="mt">FK</span></div>
+          <div class="mbr"><span class="vs vs-g">+</span><span class="mn mn-a">recipient_phone · variable_data · try_count</span></div>
+          <div class="mbr"><span class="vs vs-g">+</span><span class="mn mn-a">event_sid · events</span></div>
+          <div class="slbl">Methods</div>
+          <div class="mbr"><span class="vs vs-g">+</span><span class="mn mn-m">execute()</span><span class="mt">→ Factory → validate → build_payload → POST</span></div>
+          <div class="mbr"><span class="vs vs-g">+</span><span class="mn mn-m">append_event()</span><span class="mt">atomic dedup + signal</span></div>
+          <div class="mbr"><span class="vs vs-g">+</span><span class="mn mn-m">should_retry</span><span class="mt">→ bool + Slack notification</span></div>
+        </div>
+
+        <div class="card" id="m-MsgExec" style="grid-column:2;grid-row:2">
+          <div class="card-head"><span class="badge b-exec">Execution</span><span class="card-name">WhatsappMessageExecution</span></div>
+          <div class="slbl">Fields</div>
+          <div class="mbr"><span class="vs vs-g">+</span><span class="mn mn-a">session · event · waba_phone</span><span class="mt">FK</span></div>
+          <div class="mbr"><span class="vs vs-g">+</span><span class="mn mn-a">user_identifier · reply_user_identifier</span><span class="mt">FK</span></div>
+          <div class="mbr"><span class="vs vs-g">+</span><span class="mn mn-a">text · event_sid · events</span></div>
+          <div class="slbl">Methods</div>
+          <div class="mbr"><span class="vs vs-g">+</span><span class="mn mn-m">generate_payload()</span><span class="mt">→ WhatsappMessagePayloadBuilder</span></div>
+          <div class="mbr"><span class="vs vs-g">+</span><span class="mn mn-m">execute()</span><span class="mt">splits if &gt;1000 chars</span></div>
+          <div class="mbr"><span class="vs vs-g">+</span><span class="mn mn-m">requires_splitting()</span><span class="mt">→ bool</span></div>
+        </div>
+
+        <div class="card" id="m-RunExec" style="grid-column:3;grid-row:2">
+          <div class="card-head"><span class="badge b-exec">Execution</span><span class="card-name">RunWhatsappCampaignExecution</span></div>
+          <div class="slbl">Purpose</div>
+          <div class="mbr" style="flex-direction:column;align-items:flex-start;gap:2px;font-size:10.5px;color:#8b949e;padding:4px 14px 8px">
+            <div>Flow-node that clones a campaign from</div>
+            <div>a flow variable, creates a child</div>
+            <div>CampaignExecution and runs it.</div>
+          </div>
+          <div class="slbl">I/O Variables</div>
+          <div class="mbr"><span class="vs vs-g">↓</span><span class="mn mn-a">campaign (ref) · csv_data</span></div>
+          <div class="mbr"><span class="vs vs-g">↑</span><span class="mn mn-a">campaign_id</span><span class="mt">→ UUID string</span></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════════════
+     TAB 3 — TEMPLATE CLASSES  (dispatch flowchart)
+══════════════════════════════════════════════════════ -->
+<div class="panel" id="panel-3">
+
+  <div class="legend">
+    <div class="leg"><div class="legd" style="background:#3a2a5a"></div>Execution Model</div>
+    <div class="leg"><div class="legd" style="background:#1a5a5a"></div>Handler Factory / Abstract</div>
+    <div class="leg"><div class="legd" style="background:#2a5a2a"></div>Concrete Handler</div>
+    <div class="leg"><div class="legd" style="background:#2a1a3a"></div>Payload Builder</div>
+    <div class="leg"><div class="legd" style="background:#3a2a1a"></div>Utility</div>
+  </div>
+
+  <!-- Two columns: left = dispatch flow, right = builder flow -->
+  <div style="display:flex;gap:0;align-items:flex-start;min-width:900px">
+
+    <!-- ── LEFT: Handler dispatch flow ── -->
+    <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:360px;max-width:460px">
+
+      <div class="track-header" style="background:#1a1a2d;color:#bc8cff;width:85%">Handler Dispatch</div>
+
+      <div class="fn fn-model" style="width:85%">
+        <div class="fn-t">WhatsappTemplateExecution.execute()</div>
+        <div class="fn-s">template, execution, variable_data ready</div>
+      </div>
+      <div class="arr-v"><div class="vline" style="background:#56d3d3"></div><div class="vtip" style="border-top-color:#56d3d3"></div></div>
+
+      <div class="fn fn-factory" style="width:85%">
+        <div class="fn-t">TemplateHandlerFactory.create()</div>
+        <div class="fn-s">static method — picks handler class</div>
+      </div>
+      <div class="arr-v"><div class="vline" style="background:#58a6ff"></div><div class="vtip" style="border-top-color:#58a6ff"></div></div>
+
+      <!-- Decision 1: is_carousel? -->
+      <div class="decision" style="width:85%">
+        <div class="diamond-wrap">
+          <div class="diamond"></div>
+          <div class="diamond-text">is_carousel<br/>(template)?</div>
+        </div>
+        <div style="display:flex;width:100%;position:relative">
+          <div style="position:absolute;top:0;left:calc(25%+1px);right:calc(25%+1px);height:2px;background:#30363d"></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center">
+            <div style="width:2px;height:18px;background:#30363d"></div>
+            <span class="branch-lbl bl-yes">YES</span>
+            <div class="fn" style="width:85%;border-color:#2a5a2a;background:#141e14">
+              <div class="fn-t" style="color:#56d364">CarouselTemplateHandler</div>
+              <div class="fn-code">validate() — 2–10 cards check</div>
+            </div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center">
+            <div style="width:2px;height:18px;background:#30363d"></div>
+            <span class="branch-lbl bl-no">NO</span>
+            <!-- Decision 2: category? -->
+            <div class="decision" style="width:90%">
+              <div class="diamond-wrap" style="width:90px;height:90px">
+                <div class="diamond"></div>
+                <div class="diamond-text" style="font-size:9px">category?</div>
+              </div>
+              <div style="display:flex;width:100%;position:relative">
+                <div style="position:absolute;top:0;left:10%;right:10%;height:2px;background:#30363d"></div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center">
+                  <div style="width:2px;height:14px;background:#30363d"></div>
+                  <span class="branch-lbl bl-txt" style="font-size:8px">AUTH</span>
+                  <div class="fn" style="width:80%;border-color:#1f4a6f;background:#0d1624;padding:6px 10px">
+                    <div class="fn-t" style="font-size:11px;color:#79b8ff">AuthenticationTemplateHandler</div>
+                  </div>
+                </div>
+                <div style="flex:1;display:flex;flex-direction:column;align-items:center">
+                  <div style="width:2px;height:14px;background:#30363d"></div>
+                  <span class="branch-lbl bl-txt" style="font-size:8px">OTHER</span>
+                  <div class="fn" style="width:80%;border-color:#2a5a2a;background:#141e14;padding:6px 10px">
+                    <div class="fn-t" style="font-size:11px;color:#56d364">StandardTemplateHandler</div>
+                    <div class="fn-s" style="font-size:9.5px">MARKETING · UTILITY</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <!-- rejoin all three paths -->
+        <div style="display:flex;width:100%;position:relative">
+          <div style="position:absolute;top:0;left:calc(25%+1px);right:calc(25%+1px);height:2px;background:#30363d"></div>
+          <div style="flex:1;display:flex;justify-content:center"><div style="width:2px;height:22px;background:#30363d"></div></div>
+          <div style="flex:1;display:flex;justify-content:center"><div style="width:2px;height:22px;background:#30363d"></div></div>
+        </div>
+      </div>
+      <div class="arr-v"><div class="vline" style="background:#56d3d3"></div><div class="vtip" style="border-top-color:#56d3d3"></div></div>
+
+      <div class="fn fn-factory" style="width:85%">
+        <div class="fn-t">handler.validate()</div>
+        <div class="fn-s">CarouselTemplateHandler checks 2–10 cards + media<br/>others: no-op (pass)</div>
+      </div>
+      <div class="arr-v"><div class="vline" style="background:#56d3d3"></div><div class="vtip" style="border-top-color:#56d3d3"></div></div>
+
+      <div class="fn fn-factory" style="width:85%">
+        <div class="fn-t">handler.build_payload()</div>
+        <div class="fn-s">calls base class helpers (marked <code style="font-size:9px;color:#e3b341">@final</code>)<br/>_make_builder() · _build_header_component()</div>
+      </div>
+      <div class="arr-v"><div class="vline" style="background:#bc8cff"></div><div class="vtip" style="border-top-color:#bc8cff"></div></div>
+
+      <div class="fn fn-end" style="width:85%">
+        <div class="fn-t" style="color:#56d364">✓ Returns payload dict</div>
+        <div class="fn-s">back to TemplateExecution.execute() → POST API</div>
+      </div>
+
+    </div>
+
+    <!-- Divider -->
+    <div class="track-sep" style="margin-top:52px"></div>
+
+    <!-- ── RIGHT: Builder call flow ── -->
+    <div style="display:flex;flex-direction:column;align-items:center;flex:1;min-width:360px;max-width:460px">
+
+      <div class="track-header" style="background:#1c1224;color:#d2a8ff;width:85%">Builder Call Flow</div>
+
+      <div class="fn" style="width:85%;border-color:#1a5a5a;background:#0d1c1c">
+        <div class="fn-t">TemplateHandler._make_builder()</div>
+        <div class="fn-s"><code style="font-size:9.5px;color:#e3b341">@final</code> — cannot be overridden</div>
+        <div class="fn-code">MetaTemplateMessageBuilder(template, variable_data)</div>
+      </div>
+      <div class="arr-v"><div class="vline" style="background:#d2a8ff"></div><div class="vtip" style="border-top-color:#d2a8ff"></div></div>
+
+      <!-- Decision: standard vs carousel build -->
+      <div class="decision" style="width:85%">
+        <div class="diamond-wrap">
+          <div class="diamond"></div>
+          <div class="diamond-text">Carousel<br/>handler?</div>
+        </div>
+        <div style="display:flex;width:100%;position:relative">
+          <div style="position:absolute;top:0;left:calc(25%+1px);right:calc(25%+1px);height:2px;background:#30363d"></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center">
+            <div style="width:2px;height:18px;background:#30363d"></div>
+            <span class="branch-lbl bl-yes">YES</span>
+            <div class="fn" style="width:88%;border-color:#2a1a3a;background:#100818">
+              <div class="fn-t" style="color:#d2a8ff;font-size:11px">builder.build_carousel()</div>
+              <div class="fn-s" style="font-size:9.5px">cards[] + media_ids[]<br/>→ header + carousel components</div>
+            </div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center">
+            <div style="width:2px;height:18px;background:#30363d"></div>
+            <span class="branch-lbl bl-no">NO</span>
+            <div class="fn" style="width:88%;border-color:#2a1a3a;background:#100818">
+              <div class="fn-t" style="color:#d2a8ff;font-size:11px">builder.build_standard()</div>
+              <div class="fn-s" style="font-size:9.5px">header_component (optional)<br/>+ body_component</div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;width:100%;position:relative">
+          <div style="position:absolute;top:0;left:calc(25%+1px);right:calc(25%+1px);height:2px;background:#30363d"></div>
+          <div style="flex:1;display:flex;justify-content:center"><div style="width:2px;height:20px;background:#30363d"></div></div>
+          <div style="flex:1;display:flex;justify-content:center"><div style="width:2px;height:20px;background:#30363d"></div></div>
+        </div>
+      </div>
+      <div class="arr-v"><div class="vline" style="background:#d2a8ff"></div><div class="vtip" style="border-top-color:#d2a8ff"></div></div>
+
+      <!-- Header component sub-flow -->
+      <div class="fn" style="width:85%;border-color:#1a5a5a;background:#0d1c1c">
+        <div class="fn-t">_build_header_component()</div>
+        <div class="fn-s"><code style="font-size:9.5px;color:#e3b341">@final</code> in TemplateHandler base</div>
+      </div>
+      <div class="arr-v"><div class="vline" style="background:#56d3d3"></div><div class="vtip" style="border-top-color:#56d3d3"></div></div>
+
+      <!-- Decision: header type -->
+      <div class="decision" style="width:85%">
+        <div class="diamond-wrap">
+          <div class="diamond"></div>
+          <div class="diamond-text">header<br/>type?</div>
+        </div>
+        <div style="display:flex;width:100%;position:relative">
+          <div style="position:absolute;top:0;left:10%;right:10%;height:2px;background:#30363d"></div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center">
+            <div style="width:2px;height:16px;background:#30363d"></div>
+            <span class="branch-lbl bl-txt" style="font-size:8px">TEXT</span>
+            <div class="fn" style="width:85%;border-color:#2a1a3a;background:#100818;padding:6px 10px">
+              <div class="fn-t" style="font-size:10.5px;color:#d2a8ff">build_text_header_component()</div>
+              <div class="fn-s" style="font-size:9px">injects variable params</div>
+            </div>
+          </div>
+          <div style="flex:1;display:flex;flex-direction:column;align-items:center">
+            <div style="width:2px;height:16px;background:#30363d"></div>
+            <span class="branch-lbl bl-txt" style="font-size:8px">IMAGE/VIDEO/DOC</span>
+            <div class="fn" style="width:85%;border-color:#2a1a3a;background:#100818;padding:6px 10px">
+              <div class="fn-t" style="font-size:10.5px;color:#d2a8ff">build_media_header_component()</div>
+              <div class="fn-s" style="font-size:9px">uses handle_id from campaign.data</div>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex;width:100%;position:relative">
+          <div style="position:absolute;top:0;left:10%;right:10%;height:2px;background:#30363d"></div>
+          <div style="flex:1;display:flex;justify-content:center"><div style="width:2px;height:18px;background:#30363d"></div></div>
+          <div style="flex:1;display:flex;justify-content:center"><div style="width:2px;height:18px;background:#30363d"></div></div>
+        </div>
+      </div>
+      <div class="arr-v"><div class="vline" style="background:#d2a8ff"></div><div class="vtip" style="border-top-color:#d2a8ff"></div></div>
+
+      <div class="fn" style="width:85%;border-color:#2a1a3a;background:#100818">
+        <div class="fn-t" style="color:#d2a8ff">_build_body_component()</div>
+        <div class="fn-s">iterates template.content["variables"]<br/>fills variable_data values or sample_value fallback</div>
+      </div>
+      <div class="arr-v"><div class="vline" style="background:#3a2a1a"></div><div class="vtip" style="border-top-color:#f0883e"></div></div>
+
+      <div class="fn" style="width:85%;border-color:#5a3a1a;background:#1c140d">
+        <div class="fn-t">WhatsappTemplateStateBuilder</div>
+        <div class="fn-s">is_carousel() · is_header_media() · get_carousel_cards()<br/>TemplateMediaResolver.resolve_media_data_url()</div>
+        <div class="fn-code">utilities — all static/class methods</div>
+      </div>
+      <div class="arr-v"><div class="vline" style="background:#d2a8ff"></div><div class="vtip" style="border-top-color:#d2a8ff"></div></div>
+
+      <div class="fn fn-end" style="width:85%">
+        <div class="fn-t" style="color:#56d364">✓ Final payload dict</div>
+        <div class="fn-s">{name, language, components:[header?, body, carousel?]}</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+
+<script>
+// Tab switching
+const panels = document.querySelectorAll('.panel');
+const tabs   = document.querySelectorAll('.tab');
+function switchTab(i) {
+  panels.forEach((p,j) => p.classList.toggle('active', j===i));
+  tabs.forEach((t,j)   => t.classList.toggle('active', j===i));
+  if (i === 2) setTimeout(renderMdlArrows, 80);
+}
+
+// Data Models SVG arrows
+function getBounds(id, canvas) {
+  const el = document.getElementById(id);
+  if (!el) return null;
+  const r  = el.getBoundingClientRect();
+  const cr = canvas.getBoundingClientRect();
+  return {
+    cx: r.left - cr.left + canvas.scrollLeft + r.width/2,
+    cy: r.top  - cr.top  + canvas.scrollTop  + r.height/2,
+    top:    r.top    - cr.top  + canvas.scrollTop,
+    bottom: r.bottom - cr.top  + canvas.scrollTop,
+    left:   r.left   - cr.left + canvas.scrollLeft,
+    right:  r.right  - cr.left + canvas.scrollLeft,
+  };
+}
+function addArrow(g, canvas, a, b, marker, stroke, dash) {
+  const f = getBounds(a, canvas), t = getBounds(b, canvas);
+  if (!f || !t) return;
+  let x1,y1,x2,y2;
+  if (Math.abs(f.cx-t.cx) > Math.abs(f.cy-t.cy)) {
+    x1=f.cx<t.cx?f.right:f.left; x2=f.cx<t.cx?t.left:t.right; y1=f.cy; y2=t.cy;
+  } else {
+    y1=f.cy<t.cy?f.bottom:f.top; y2=f.cy<t.cy?t.top:t.bottom; x1=f.cx; x2=t.cx;
+  }
+  const mx=(x1+x2)/2;
+  const p=document.createElementNS('http://www.w3.org/2000/svg','path');
+  p.setAttribute('d',`M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2},${y2}`);
+  p.setAttribute('stroke', stroke);
+  p.setAttribute('stroke-width','1.8');
+  p.setAttribute('fill','none');
+  if (dash) p.setAttribute('stroke-dasharray', dash);
+  p.setAttribute('marker-end', `url(#${marker})`);
+  g.appendChild(p);
+}
+function renderMdlArrows() {
+  const canvas = document.getElementById('mdl-canvas');
+  const svg    = document.getElementById('mdl-svg');
+  const g      = document.getElementById('mdl-lines');
+  while (g.firstChild) g.removeChild(g.firstChild);
+  svg.setAttribute('width',  canvas.scrollWidth  + 64);
+  svg.setAttribute('height', canvas.scrollHeight + 64);
+  const fk = (a,b)  => addArrow(g, canvas, a, b, 'ah-fk', '#bc8cff', '5,3');
+  const cr = (a,b)  => addArrow(g, canvas, a, b, 'ah-cr', '#f0883e', '4,3');
+  fk('m-Campaign',    'm-Template');
+  fk('m-CampaignExec','m-Campaign');
+  fk('m-TemplateExec','m-CampaignExec');
+  fk('m-TemplateExec','m-Template');
+  cr('m-RunExec',     'm-CampaignExec');
+  fk('m-MsgExec',     'm-Campaign');
+}
+</script>
+</body>
+</html>
